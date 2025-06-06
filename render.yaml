@@ -33,9 +33,9 @@ services:
         #   type: web
         #   name: tempmail-frontend
         #   property: url
-        value: https://tempmail-backend.onrender.com # ATUALIZE ESTE VALOR
+        value: https://tempmail-back.onrender.com # ATUALIZE ESTE VALOR
       - key: EMAIL_DOMAIN
-        value: tempmail-backend.onrender.com # ATUALIZE com seu domínio real (ex: meutempmail.com)
+        value: tempmail-back.onrender.com # ATUALIZE com seu domínio real (ex: meutempmail.com)
       # A variável PORT é configurada automaticamente pelo Render.
 
   # --- Frontend Service (React + Vite Static Site) ---
