@@ -1,0 +1,70 @@
+# render.yaml
+# Este arquivo define a infraestrutura para o TempMail Pro no Render.com.
+# Coloque este arquivo na raiz do seu repositório Git.
+# Se seu backend e frontend estiverem em subdiretórios (ex: 'backend/' e 'frontend/'),
+# ajuste a propriedade 'rootDir' para cada serviço conforme comentado abaixo.
+
+version: 1
+
+services:
+  # --- Backend Service (NestJS) ---
+  - type: web
+    name: tempmail-backend # Nome do seu serviço de backend
+    env: node # Ambiente Node.js
+    region: oregon # Região de deploy (ex: oregon, frankfurt, ohio, singapore)
+    plan: free # Plano do Render (o 'free' é bom para começar)
+    # rootDir: ./backend            # Descomente e ajuste se seu backend estiver em um subdiretório
+    buildCommand: npm install && npm run build # Comando para construir a aplicação
+    startCommand: node dist/main.js # Comando para iniciar a aplicação após o build
+    healthCheckPath: / # Rota para verificação de saúde (ajuste se tiver uma específica)
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: REDIS_URL # URL de conexão do Redis
+        fromService: # Obtida do serviço Redis definido abaixo
+          type: pserv
+          name: tempmail-redis
+          property: connectionString # Render injeta a string de conexão completa
+      - key: CLIENT_URL
+        # Substitua pelo URL do seu frontend após o deploy no Render
+        # Exemplo: https://tempmail-frontend.onrender.com
+        # Você pode usar 'fromService' se o frontend for deployado via este YAML também:
+        # fromService:
+        #   type: web
+        #   name: tempmail-frontend
+        #   property: url
+        value: https://tempmail-backend.onrender.com # ATUALIZE ESTE VALOR
+      - key: EMAIL_DOMAIN
+        value: tempmail-backend.onrender.com # ATUALIZE com seu domínio real (ex: meutempmail.com)
+      # A variável PORT é configurada automaticamente pelo Render.
+
+  # --- Frontend Service (React + Vite Static Site) ---
+  - type: web # Serviços estáticos também são do tipo 'web' no Render
+    name: tempmail-frontend # Nome do seu serviço de frontend
+    env: static # Ambiente para sites estáticos
+    region: oregon # Mesma região do backend é uma boa prática
+    plan: free
+    # rootDir: ./frontend           # Descomente e ajuste se seu frontend estiver em um subdiretório
+    buildCommand: npm install && npm run build # Comando para construir o site estático
+    staticPublishPath: ./dist # Diretório de saída do build do Vite (geralmente 'dist')
+    envVars:
+      - key: VITE_SOCKET_URL # URL do backend para o WebSocket
+        fromService: # Obtida do serviço de backend definido acima
+          type: web
+          name: tempmail-backend
+          property: url # Render injeta o URL público do serviço de backend
+    routes:
+      - type: rewrite # Para Single Page Applications (SPA) como React
+        source: /* # Redireciona todas as rotas
+        destination: /index.html # para o index.html principal
+
+  # --- Redis Service ---
+  - type: pserv # Private Service para o Redis
+    name: tempmail-redis # Nome do seu serviço Redis
+    env: redis # Ambiente Redis
+    region: oregon # Mesma região do backend
+    plan: free # Render oferece instâncias Redis no plano gratuito (verifique os limites atuais)
+    # ipAllowList: []               # Opcional: Por padrão, serviços na mesma conta/região podem se comunicar.
+    # Se precisar restringir, adicione IPs ou CIDRs aqui.
+    # Ex: [{ "value": "YOUR_BACKEND_SERVICE_IP", "description": "Backend" }]
+    # No entanto, a conexão via 'fromService' geralmente lida com isso de forma segura.
